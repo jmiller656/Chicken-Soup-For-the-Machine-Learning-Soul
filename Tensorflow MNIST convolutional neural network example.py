@@ -63,7 +63,7 @@ Now, we're gonna convolve the image with the weight tensor,
 add the bias to it, and apply the ReLU function
 ....... but Josh......
 what is the ReLU function?
-Good question! Here's a goof place to read up on it:
+Good question! Here's a good place to read up on it:
 https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
 '''
 h_conv1 = tf.nn.relu(conv2d(x_image,W_conv1)+b_conv1);
