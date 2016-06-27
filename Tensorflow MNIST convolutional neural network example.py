@@ -156,7 +156,7 @@ at 16 to pursue some kind of genius venture that never really panned out,
 constantly chanting the refrain "BILL GATES AND STEVE JOBS WERE DROUPOUTS, LOOK HOW SUCCESSFUL THEY WERE"
 
 Well guess what:
-1. Those men didn't drop out of high school, they dropped out of VERY PRESTIGOUS UNIVERSITIES
+1. Those men didn't drop out of high school, they dropped out of VERY PRESTIGIOUS UNIVERSITIES
 2. They didn't leave to pursue a promising career of overtime at mcdonalds in order to feed their drug habit, or what have you; 
    they actually wanted to change the world... and they did
 
