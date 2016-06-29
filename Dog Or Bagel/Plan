@@ -1,0 +1,11 @@
+Training data:
+5 dogs
+5 bagels
+
+Test data:
+3 dogs
+3 bagels
+
+Classifier:
+0: dog
+1: bagel
