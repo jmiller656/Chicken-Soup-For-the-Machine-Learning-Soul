@@ -1,4 +1,5 @@
 import tensorflow as tf 
+import dataset as ds
 #Just an easy way to make a weight variable, with some random initialization
 def weight_variable(shape):
 	initial = tf.truncated_normal(shape,stddev=0.1);
@@ -15,16 +16,16 @@ def max_pool_2x2(x):
 	return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME');
 
 #build tensorflow session THIS IS IMPORTANT
-session = tf.interactive_session();
+session = tf.InteractiveSession();
 
 #1024 = 32x32 -> Images are 32x32. That's why I did this
 x = tf.placeholder(tf.float32,shape=[None,1024]);
 #Size 2 because right now we're just doing dog or bagel, that's it
-y = tf.placeholder(tf.float32,shape[None,2]);
+y = tf.placeholder(tf.float32,shape=[None,2]);
 #Our """""""""slope""""""""" (yes, this EXTREMELY oversimplifying it) weight
-M = tf.weight_variable([1024,2]);
+M = weight_variable([1024,2]);
 #Our bias weight
-b = tf.bias_variable([2]);
+b = bias_variable([2]);
 
 
 '''
@@ -39,12 +40,12 @@ be pretty rad. Especially if it works
 '''
 So, let me explain myself here
 Right now we're going to take a __5x5__ kernel,
-run it over the __3__ channel image (BGR)
+run it over the __1__ channel image (BGR)
 and compute __32__ features.
 Get it?
 Good.
 '''
-M_conv1 = weight_variable([5,5,3,32]);
+M_conv1 = weight_variable([5,5,1,32]);
 
 #Bias for our 32 features. Rad
 b_conv1 = bias_variable([32]);
@@ -58,7 +59,7 @@ Watch
 Now it's a 4d tensor...
 We did it, reddit!
 '''
-x_image = tf.reshape(x,[-1,32,32,3])
+x_image = tf.reshape(x,[-1,32,32,1])
 
 '''
 Now, we're going to convolve the image and
@@ -127,7 +128,7 @@ Then we make our hypothesis once again with
 (x * M) + b
 [back to my awful analogy]
 '''
-h_fc1 = tf.relu(tf.matmul(h_pool2_flat,M_fcl1)+b_fcl1);
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat,M_fcl1)+b_fcl1);
 
 
 '''
@@ -181,11 +182,25 @@ for us to train our ConvNN in tensorflow
 
 So here goes
 '''
+
+#Building my dataset
+train_x = ds.get_train_dataset();
+test_x = ds.get_test_dataset();
+
+train_y = ds.get_train_labels();
+test_y = ds.get_test_labels();
+
 cross_entropy = tf.reduce_mean(-tf.reduce_sum(y * tf.log(y_conv),reduction_indices=[1]));
-train_step = tf.AdamOptimizer(1e-4).minimize(cross_entropy);
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy);
 correct_prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y,1));
-accuracy = tf.reduce_mean(tf.cast(correct_prediction),tf.float32);
+accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32));
 session.run(tf.initialize_all_variables());
 for i in range(1000):
-	#TODO
-	print "I'm pretending to work right now"
+	if i%100 == 0:
+		train_accuracy = accuracy.eval(feed_dict={
+			x:train_x,y:train_y,keep_prob:1.0});
+		print("step %d, training accuracy %g"%(i,train_accuracy));
+	train_step.run(feed_dict={x:train_x,y:train_y,keep_prob:1.0});
+
+print("Final test accuracy %g"%accuracy.eval(feed_dict={
+	x:test_x,y:test_y,keep_prob:1.0}));
