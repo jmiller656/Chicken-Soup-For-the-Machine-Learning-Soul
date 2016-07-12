@@ -211,7 +211,7 @@ train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy);
 correct_prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y_,1));
 accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32));
 session.run(tf.initialize_all_variables());
-for i in range(20000):
+for i in range(1000):
 	batch = mnist.train.next_batch(50);
 	if i%100 == 0:
 		train_accuracy = accuracy.eval(feed_dict={
