@@ -2,7 +2,7 @@ import tensorflow as tf
 import dataset as ds
 #Just an easy way to make a weight variable, with some random initialization
 def weight_variable(shape):
-	initial = tf.truncated_normal(shape,stddev=0.1);
+	initial = tf.truncated_normal(shape,stddev=0.01);
 	return tf.Variable(initial);
 #Same idea
 def bias_variable(shape):
@@ -40,15 +40,15 @@ be pretty rad. Especially if it works
 '''
 So, let me explain myself here
 Right now we're going to take a __5x5__ kernel,
-run it over the __1__ channel image (BGR)
+run it over the __3__ channel image (BGR)
 and compute __32__ features.
 Get it?
 Good.
 '''
-M_conv1 = weight_variable([5,5,3,32]);
+M_conv1 = weight_variable([1,1,3,128]);
 
 #Bias for our 32 features. Rad
-b_conv1 = bias_variable([32]);
+b_conv1 = bias_variable([128]);
 
 '''
 Ok, so now we need to reshape our images into a 4d tensor. 
@@ -79,8 +79,8 @@ Layer 2
 
 Pretty much the same idea, with some subtle differences
 '''
-M_conv2 = weight_variable([5,5,32,64]);
-b_conv2 = bias_variable([64]);
+M_conv2 = weight_variable([1,1,128,256]);
+b_conv2 = bias_variable([256]);
 
 h_conv2 = tf.nn.relu(conv2d(h_pool1,M_conv2)+ b_conv2);
 h_pool2 = max_pool_2x2(h_conv2);
@@ -114,14 +114,14 @@ We have 64 features for a matrix of that size,
 and we want to apply that to 1024 separate neurons....
 hence the variables below
 '''
-M_fcl1 = weight_variable([8*8*64,1024]);
+M_fcl1 = weight_variable([8*8*256,1024]);
 b_fcl1 = bias_variable([1024]);
 
 '''
 So, now we need to flatten our pooled data from the previous
 layer, hence the reshape call on h_pool2
 '''
-h_pool2_flat = tf.reshape(h_pool2,[-1,8*8*64]);
+h_pool2_flat = tf.reshape(h_pool2,[-1,8*8*256]);
 '''
 Then we make our hypothesis once again with
 (hypothesis * weight) + bias
@@ -184,20 +184,34 @@ So here goes
 '''
 
 #Building my dataset
+print("Gathering Dataset...")
+learn_rate = 1e-4
 train_data = ds.get_train_dataset();
 test_data = ds.get_test_dataset();
-
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y * tf.log(y_conv),reduction_indices=[1]));
-train_step = tf.train.AdamOptimizer(1e-8).minimize(cross_entropy);
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(y_conv,y);
+train_step = tf.train.AdamOptimizer(learn_rate).minimize(cross_entropy);
 correct_prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y,1));
 accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32));
 session.run(tf.initialize_all_variables());
-for i in range(1000):
-	if i%100 == 0:
+print("Beginning training...")
+acc = 0;
+for i in range(10000):
+	if i%10 == 0:
 		train_accuracy = accuracy.eval(feed_dict={
-			x:train_data[0][(i):(i*3)],y:train_data[1][(i):(i*3)],keep_prob:1.0});
-		print("step %d, training accuracy %g"%(i,train_accuracy));
-	train_step.run(feed_dict={x:train_data[0][(i):(i*3)],y:train_data[1][(i):(i*3)],keep_prob:0.5});
+			x:train_data[0][i*100%3000:(i+1)*100%3000],y:train_data[1][i*100%3000:(i+1)*100%3000],keep_prob:1.0});
+		print("Step %d training accuracy: %g"%(i,train_accuracy));
+		if train_accuracy > acc:
+			acc = train_accuracy;
+		elif train_accuracy < acc:
+			learn_rate /= 5;
+			print("New learn rate: %.10e"%(learn_rate));
+		else:
+			learn_rate *=2;
+			print("New learn rate: %.10e"%(learn_rate));
+	train_step.run(feed_dict={x:train_data[0][i*100%3000:(i+1)*100%3000],y:train_data[1][i*100%3000:(i+1)*100%3000],keep_prob:1.0});
+	#print session.run(y_conv,feed_dict={x:train_data[0][i*100%3000:(i+1)*100%3000],y:train_data[1][i*100%3000:(i+1)*100%3000],keep_prob:1.0});
 
 print("Final test accuracy %g"%accuracy.eval(feed_dict={
-	x:test_data[0],y:test_data[1],keep_prob:1.0}));
+	x:train_data[0],y:train_data[1],keep_prob:1.0}));
+print("End")
+session.close()
