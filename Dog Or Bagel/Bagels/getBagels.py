@@ -15,5 +15,5 @@ for photo in w:
     	i = i+1
     	if i > 3000:
         	break
-    except IOError:
+    except Exception:
 	print("Whoops, failed on number: "+str(i))

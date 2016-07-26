@@ -9,7 +9,7 @@ w = Walker(Photo.search, tags="bagel",text="bagel",sort="relevance")
 for photo in w:
     try:
     	url = photo.getPhotoFile()
-    	f = open("dog_" + str(i)+".png",'wb')
+    	f = open("bagel_" + str(i),'wb')
     	f.write(urllib.urlopen(url).read())
     	f.close()
     	i = i+1
