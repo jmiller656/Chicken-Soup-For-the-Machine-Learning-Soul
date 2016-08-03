@@ -45,7 +45,7 @@ and compute __32__ features.
 Get it?
 Good.
 '''
-M_conv1 = weight_variable([3,3,3,128]);
+M_conv1 = weight_variable([1,1,3,128]);
 
 #Bias for our 32 features. Rad
 b_conv1 = bias_variable([128]);
@@ -86,7 +86,7 @@ h_conv2 = tf.nn.relu(conv2d(h_pool1,M_conv2)+ b_conv2);
 h_pool2 = max_pool_2x2(h_conv2);
 
 
-M_conv3 = weight_variable([5,5,256,512])
+M_conv3 = weight_variable([2,2,256,512])
 b_conv3 = bias_variable([512])
 
 h_conv3 = tf.nn.relu(conv2d(h_pool2,M_conv3)+b_conv3)
@@ -125,14 +125,14 @@ We have 64 features for a matrix of that size,
 and we want to apply that to 1024 separate neurons....
 hence the variables below
 '''
-M_fcl1 = weight_variable([8*8*256,3072]);
-b_fcl1 = bias_variable([3072]);
+M_fcl1 = weight_variable([4*1024,8192]);
+b_fcl1 = bias_variable([8192]);
 
 '''
 So, now we need to flatten our pooled data from the previous
 layer, hence the reshape call on h_pool2
 '''
-h_pool2_flat = tf.reshape(h_pool2,[-1,8*8*256]);
+h_pool2_flat = tf.reshape(h_pool4,[-1,4*1024]);
 '''
 Then we make our hypothesis once again with
 (hypothesis * weight) + bias
@@ -164,7 +164,7 @@ Cool.
 (once again, this is a fully connected layer)
 '''
 
-M_fcl2 = weight_variable([3072,8]);
+M_fcl2 = weight_variable([8192,8]);
 b_fcl2 = bias_variable([8]);
 #Now, we're applying a softmax function to get our final answers instead of ReLU
 y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop,M_fcl2)+b_fcl2);
@@ -199,34 +199,53 @@ So here goes
 
 #Building my dataset
 print("Gathering Dataset...")
-learn_rate = 1e-2
+learn_rate = 1e-8
 train_data = ds.get_train_dataset(start=10,end=3000);
 test_data = ds.get_test_dataset();
 size = len(train_data[0])
+batch_size = 250
+check_freq = 100
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(y_conv,y);
 train_step = tf.train.AdamOptimizer(learn_rate).minimize(cross_entropy);
 correct_prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y,1));
 accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32));
 session.run(tf.initialize_all_variables());
+
 print("Beginning training...")
 acc = 0;
+test_dict = {
+	x:test_data[0],
+	y:test_data[1],
+	keep_prob:1.0
+}
+
 for i in range(10000):
-	if i%100 == 0:
-		train_accuracy = accuracy.eval(feed_dict={
-			x:test_data[0],y:test_data[1],keep_prob:1.0});
-		print("Step %d training accuracy: %g"%(i,train_accuracy));
-		if train_accuracy > acc:
-			acc = train_accuracy;
-		elif train_accuracy < acc:
-			if learn_rate/3 >0:
-				learn_rate /= 3;
+	train_eval_dict = {
+		x:train_data[0][i*batch_size%size:(i+1)*batch_size%size],
+		y:train_data[1][i*batch_size%size:(i+1)*batch_size%size],
+		keep_prob:1.0	
+	}
+	train_dict = {
+		x:train_data[0][i*batch_size%size:(i+1)*batch_size%size],
+		y:train_data[1][i*batch_size%size:(i+1)*batch_size%size],
+		keep_prob:0.5	
+	}
+	if i%check_freq == 0:
+		train_accuracy = accuracy.eval(feed_dict=train_eval_dict);
+		test_accuracy = accuracy.eval(feed_dict=test_dict)
+		print("Step %d\ttraining accuracy: %g\ttest accuracy: %g"%(i,train_accuracy,test_accuracy));
+		#if train_accuracy > acc:
+			#acc = train_accuracy;
+		#elif train_accuracy < acc:
+			#if learn_rate/3 >0:
+				#learn_rate /= 10;
 				#print("New learn rate: %e"%(learn_rate));
-		else:
-			learn_rate *=1.2;
+		#else:
+			#learn_rate *=5;
 			#print("New learn rate: %e"%(learn_rate));
-	train_step.run(feed_dict={x:train_data[0][i*100%size:(i+1)*100%size],y:train_data[1][i*100%size:(i+1)*100%size],keep_prob:0.5});
+		print y_conv.eval(feed_dict=train_dict)
+	train_step.run(feed_dict=train_dict);
 	
-print("Final test accuracy %g"%accuracy.eval(feed_dict={
-	x:test_data[0],y:test_data[1],keep_prob:1.0}));
+print("Final test accuracy %g"%accuracy.eval(feed_dict=test_dict));
 print("End")
 session.close()
